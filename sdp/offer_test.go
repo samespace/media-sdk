@@ -60,7 +60,7 @@ func TestSDPMediaOffer(t *testing.T) {
 			{Key: "rtpmap", Value: "0 PCMU/8000"},
 			{Key: "rtpmap", Value: "8 PCMA/8000"},
 			{Key: "rtpmap", Value: "101 telephone-event/8000"},
-			{Key: "fmtp", Value: "101 0-16"},
+			{Key: "fmtp", Value: "101 0-15"},
 			{Key: "ptime", Value: "20"},
 			{Key: "sendrecv"},
 		},
@@ -84,7 +84,7 @@ func TestSDPMediaOffer(t *testing.T) {
 			{Key: "rtpmap", Value: "0 PCMU/8000"},
 			{Key: "rtpmap", Value: "8 PCMA/8000"},
 			{Key: "rtpmap", Value: "101 telephone-event/8000"},
-			{Key: "fmtp", Value: "101 0-16"},
+			{Key: "fmtp", Value: "101 0-15"},
 			{Key: "crypto", Value: "1 AES_CM_128_HMAC_SHA1_80 inline:" + getInline(offer.Attributes[i+0].Value)},
 			{Key: "crypto", Value: "2 AES_CM_128_HMAC_SHA1_32 inline:" + getInline(offer.Attributes[i+1].Value)},
 			{Key: "crypto", Value: "3 AES_256_CM_HMAC_SHA1_80 inline:" + getInline(offer.Attributes[i+2].Value)},
@@ -110,7 +110,7 @@ func TestSDPMediaOffer(t *testing.T) {
 			{Key: "rtpmap", Value: "0 PCMU/8000"},
 			{Key: "rtpmap", Value: "8 PCMA/8000"},
 			{Key: "rtpmap", Value: "101 telephone-event/8000"},
-			{Key: "fmtp", Value: "101 0-16"},
+			{Key: "fmtp", Value: "101 0-15"},
 			{Key: "ptime", Value: "20"},
 			{Key: "sendrecv"},
 		},
@@ -337,7 +337,7 @@ func TestSDPMediaAnswer(t *testing.T) {
 			{Key: "rtpmap", Value: "0 PCMU/8000"},
 			{Key: "rtpmap", Value: "8 PCMA/8000"},
 			{Key: "rtpmap", Value: "101 telephone-event/8000"},
-			{Key: "fmtp", Value: "101 0-16"},
+			{Key: "fmtp", Value: "101 0-15"},
 			{Key: "ptime", Value: "20"},
 			{Key: "sendrecv"},
 		},
@@ -378,7 +378,7 @@ a=rtpmap:9 G722/8000
 a=rtpmap:0 PCMU/8000
 a=rtpmap:8 PCMA/8000
 a=rtpmap:101 telephone-event/8000
-a=fmtp:101 0-16
+a=fmtp:101 0-15
 a=ptime:20
 a=sendrecv
 `,
@@ -396,7 +396,7 @@ a=rtpmap:9 G722/8000
 a=rtpmap:0 PCMU/8000
 a=rtpmap:8 PCMA/8000
 a=rtpmap:101 telephone-event/8000
-a=fmtp:101 0-16
+a=fmtp:101 0-15
 a=ptime:20
 a=sendrecv
 `,

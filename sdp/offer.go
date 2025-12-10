@@ -127,7 +127,7 @@ func OfferMedia(rtpListenerPort int, encrypted Encryption) (MediaDesc, *sdp.Medi
 	}
 	if dtmfType > 0 {
 		attrs = append(attrs, sdp.Attribute{
-			Key: "fmtp", Value: fmt.Sprintf("%d 0-16", dtmfType),
+			Key: "fmtp", Value: fmt.Sprintf("%d 0-15", dtmfType),
 		})
 	}
 	var cryptoProfiles []srtp.Profile
@@ -179,7 +179,7 @@ func AnswerMedia(rtpListenerPort int, audio *AudioConfig, crypt *srtp.Profile) *
 		formats = append(formats, strconv.Itoa(int(audio.DTMFType)))
 		attrs = append(attrs, []sdp.Attribute{
 			{Key: "rtpmap", Value: fmt.Sprintf("%d %s", audio.DTMFType, dtmf.SDPName)},
-			{Key: "fmtp", Value: fmt.Sprintf("%d 0-16", audio.DTMFType)},
+			{Key: "fmtp", Value: fmt.Sprintf("%d 0-15", audio.DTMFType)},
 		}...)
 	}
 	proto := "AVP"
