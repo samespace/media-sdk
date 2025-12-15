@@ -32,7 +32,7 @@ func init() {
 		SampleRate:  8000,
 		RTPDefType:  prtp.PayloadTypePCMA,
 		RTPIsStatic: true,
-		Priority:    -7,
+		Priority:    -20,
 		FileExt:     "g711a",
 	}, DecodeALaw, EncodeALaw))
 }
