@@ -161,6 +161,11 @@ func Decode(data []byte) (Event, error) {
 	}, nil
 }
 
+// DecodeRTP decodes a DTMF event from an RTP packet.
+//
+// Deprecated: This function only detects the start of DTMF events (Marker bit)
+// and cannot properly detect completed digits. Use Receiver.Receive instead,
+// which correctly handles RFC 4733 End bit detection and deduplication.
 func DecodeRTP(h *rtp.Header, payload []byte) (Event, bool) {
 	if !h.Marker {
 		return Event{}, false
@@ -306,3 +311,35 @@ type Writer interface {
 }
 
 type Handler func(ev Event)
+
+// Receiver processes RFC 4733 DTMF events from RTP packets.
+// It tracks state to properly detect digit completion and
+// deduplicate redundant end packets.
+type Receiver struct {
+	lastTimestamp uint32
+	reported      bool
+}
+
+// Receive processes an RTP packet and returns a completed DTMF event.
+// Returns (event, true) when a digit is detected (on first End packet).
+// Returns (Event{}, false) for intermediate packets or duplicates.
+func (r *Receiver) Receive(h *rtp.Header, payload []byte) (Event, bool) {
+	ev, err := Decode(payload)
+	if err != nil {
+		return Event{}, false
+	}
+
+	// New event: different timestamp
+	if h.Timestamp != r.lastTimestamp {
+		r.lastTimestamp = h.Timestamp
+		r.reported = false
+	}
+
+	// Report only on End bit, deduplicate redundant end packets
+	if ev.End && !r.reported {
+		r.reported = true
+		return ev, true
+	}
+
+	return Event{}, false
+}

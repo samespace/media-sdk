@@ -156,3 +156,48 @@ func TestDTMFDelay(t *testing.T) {
 	}
 	require.Equal(t, exp, got)
 }
+
+func TestReceiver(t *testing.T) {
+	var r Receiver
+
+	// Simulate RFC 4733 packet sequence for digit "5":
+	// - First packet: Marker=1, End=0
+	// - Intermediate packets: Marker=0, End=0
+	// - End packets (3x): Marker=0, End=1
+
+	const ts uint32 = 1000
+
+	// First packet (Marker=1, End=0) - should not report
+	ev, ok := r.Receive(&rtp.Header{Marker: true, Timestamp: ts}, []byte{0x05, 0x0a, 0x00, 0x50})
+	require.False(t, ok, "should not report on first packet")
+
+	// Intermediate packet (Marker=0, End=0) - should not report
+	ev, ok = r.Receive(&rtp.Header{Marker: false, Timestamp: ts}, []byte{0x05, 0x0a, 0x00, 0xa0})
+	require.False(t, ok, "should not report on intermediate packet")
+
+	// First end packet (Marker=0, End=1) - should report
+	ev, ok = r.Receive(&rtp.Header{Marker: false, Timestamp: ts}, []byte{0x05, 0x8a, 0x00, 0xf0})
+	require.True(t, ok, "should report on first end packet")
+	require.Equal(t, byte('5'), ev.Digit)
+	require.True(t, ev.End)
+
+	// Second end packet (duplicate) - should not report
+	ev, ok = r.Receive(&rtp.Header{Marker: false, Timestamp: ts}, []byte{0x05, 0x8a, 0x00, 0xf0})
+	require.False(t, ok, "should not report duplicate end packet")
+
+	// Third end packet (duplicate) - should not report
+	ev, ok = r.Receive(&rtp.Header{Marker: false, Timestamp: ts}, []byte{0x05, 0x8a, 0x00, 0xf0})
+	require.False(t, ok, "should not report duplicate end packet")
+
+	// New digit "3" with different timestamp - should reset state
+	const ts2 uint32 = 2000
+
+	// First packet of new digit
+	ev, ok = r.Receive(&rtp.Header{Marker: true, Timestamp: ts2}, []byte{0x03, 0x0a, 0x00, 0x50})
+	require.False(t, ok, "should not report on first packet of new digit")
+
+	// End packet of new digit - should report
+	ev, ok = r.Receive(&rtp.Header{Marker: false, Timestamp: ts2}, []byte{0x03, 0x8a, 0x00, 0xf0})
+	require.True(t, ok, "should report on end packet of new digit")
+	require.Equal(t, byte('3'), ev.Digit)
+}

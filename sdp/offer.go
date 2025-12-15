@@ -229,7 +229,7 @@ func NewOffer(publicIp netip.Addr, rtpListenerPort int, encrypted Encryption) (*
 			AddressType:    "IP4",
 			UnicastAddress: publicIp.String(),
 		},
-		SessionName: "LiveKit",
+		SessionName: "Samespace",
 		ConnectionInformation: &sdp.ConnectionInformation{
 			NetworkType: "IN",
 			AddressType: "IP4",
@@ -287,7 +287,7 @@ func (d *Offer) Answer(publicIp netip.Addr, rtpListenerPort int, enc Encryption)
 			AddressType:    "IP4",
 			UnicastAddress: publicIp.String(),
 		},
-		SessionName: "LiveKit",
+		SessionName: "Samespace",
 		ConnectionInformation: &sdp.ConnectionInformation{
 			NetworkType: "IN",
 			AddressType: "IP4",
