@@ -20,6 +20,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/go-logr/logr"
 	"gopkg.in/hraban/opus.v2"
 
 	"github.com/livekit/protocol/logger"
@@ -34,6 +35,23 @@ import (
 #include <opus.h>
 */
 import "C"
+
+const SDPName = "opus/48000/2"
+
+var (
+	defaultLogger = logger.LogRLogger(logr.Discard())
+)
+
+func init() {
+	media.RegisterCodec(rtp.NewAudioCodec(media.CodecInfo{
+		SDPName:      SDPName,
+		SampleRate:   48000,
+		RTPClockRate: 48000,
+		RTPIsStatic:  false, // Opus uses dynamic payload type
+		Priority:     10,    // Higher priority for better quality codec
+		FileExt:      "opus",
+	}, DecodeRTP, EncodeRTP))
+}
 
 type Sample []byte
 
@@ -190,4 +208,89 @@ func (e *encoder) Close() error {
 
 func NewWebmWriter(w io.WriteCloser, sampleRate int, channels int, sampleDur time.Duration) media.WriteCloser[Sample] {
 	return webm.NewWriter[Sample](w, "A_OPUS", channels, sampleRate, sampleDur)
+}
+
+// DecodeRTP creates an Opus decoder for RTP/SIP use.
+// It defaults to mono (1 channel) for telephony, but can adapt to stereo if needed.
+func DecodeRTP(w media.PCM16Writer) Writer {
+	// Resample to 48kHz if needed (Opus standard sample rate)
+	if w.SampleRate() != 48000 {
+		w = media.ResampleWriter(w, 48000)
+	}
+	// Default to mono for telephony, but decoder will adapt to packet channels
+	// Decode should not fail for valid parameters (48kHz, 1 channel)
+	dec, err := Decode(w, 1, defaultLogger)
+	if err != nil {
+		// This should not happen with valid parameters, but if it does,
+		// return a decoder that will fail on first write
+		return &errorDecoder{
+			w:   w,
+			err: fmt.Errorf("failed to create opus decoder: %w", err),
+		}
+	}
+	return dec
+}
+
+// errorDecoder is a fallback decoder that returns an error on write
+type errorDecoder struct {
+	w   media.PCM16Writer
+	err error
+}
+
+func (d *errorDecoder) String() string {
+	return fmt.Sprintf("OPUS(error) -> %s", d.w)
+}
+
+func (d *errorDecoder) SampleRate() int {
+	return d.w.SampleRate()
+}
+
+func (d *errorDecoder) WriteSample(in Sample) error {
+	return d.err
+}
+
+func (d *errorDecoder) Close() error {
+	return d.w.Close()
+}
+
+// EncodeRTP creates an Opus encoder for RTP/SIP use.
+// It defaults to mono (1 channel) for telephony.
+// The writer should be configured for 48kHz sample rate (Opus standard).
+func EncodeRTP(w Writer) media.PCM16Writer {
+	// Default to mono (1 channel) for telephony
+	// Encode should not fail for valid parameters (48kHz, 1 channel)
+	enc, err := Encode(w, 1, defaultLogger)
+	if err != nil {
+		// This should not happen with valid parameters, but if it does,
+		// we need to handle it. Since we can't return an error, we'll
+		// create an encoder that will fail on first write.
+		// In practice, this indicates a configuration error.
+		return &errorEncoder{
+			w:   w,
+			err: fmt.Errorf("failed to create opus encoder: %w", err),
+		}
+	}
+	return enc
+}
+
+// errorEncoder is a fallback encoder that returns an error on write
+type errorEncoder struct {
+	w   Writer
+	err error
+}
+
+func (e *errorEncoder) String() string {
+	return fmt.Sprintf("OPUS(error) -> %s", e.w)
+}
+
+func (e *errorEncoder) SampleRate() int {
+	return e.w.SampleRate()
+}
+
+func (e *errorEncoder) WriteSample(in media.PCM16Sample) error {
+	return e.err
+}
+
+func (e *errorEncoder) Close() error {
+	return e.w.Close()
 }
